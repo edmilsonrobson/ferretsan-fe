@@ -1,12 +1,27 @@
-import { useCallback } from "react";
-import { signIn, signOut, useSession } from "next-auth/react";
-import { FaIntercom } from "react-icons/fa";
+import { signOut, useSession } from "next-auth/react";
 import type { Session } from "next-auth";
+import { useCallback } from "react";
+import { CgPerformance } from "react-icons/cg";
+import { TailSpin } from "react-loader-spinner";
+import { useRouter } from "next/router";
 
-const GuestMessage = () => (
+import { Button } from "../components/ui/Button";
+import { ConnectWithIntercomButton } from "../components/ConnectWithIntercomButton";
+import { MainContainer } from "../components/ui/MainContainer";
+
+const GuestView = () => (
     <>
-        <p className="text-xl">👏 Welcome to FerretSan!</p>
-        <p>Ready to get started doing Intercom performance reviews?</p>
+        <p className="text-xl">
+            <span className="text-4xl">👏</span> Welcome to FerretSan!
+        </p>
+        <p className="text-center">
+            Connect with your Intercom account to start doing performance
+            reviews.
+        </p>
+
+        <div className="mt-12">
+            <ConnectWithIntercomButton />
+        </div>
     </>
 );
 
@@ -14,11 +29,15 @@ interface LoggedUserMessageProps {
     session: Session;
 }
 
-const LoggedUserMessage = ({ session }: LoggedUserMessageProps) => {
+const LoggedUserView = ({ session }: LoggedUserMessageProps) => {
+    const router = useRouter();
+    const handleStartPerformanceReviewsClick = useCallback(() => {
+        router.push("/start");
+    }, [router]);
     if (!session.user) {
         return null;
     }
-    const { image } = session.user;
+    const { image, name } = session.user;
 
     return (
         <>
@@ -32,38 +51,18 @@ const LoggedUserMessage = ({ session }: LoggedUserMessageProps) => {
                 ) : null}
             </div>
             <p className="text-xl">
-                👏 welcome, <strong>{session.user?.name}</strong>!
+                <span className="text-4xl">👩‍💻</span> welcome,{" "}
+                <strong>{name}</strong>!
             </p>
-            <p>Ready to get started doing Intercom performance reviews?</p>
-        </>
-    );
-};
+            <p className="text-center">
+                It&apos;s a pleasure to see you here today.
+            </p>
 
-export const Home = () => {
-    const { data: session } = useSession();
-
-    const handleOnLoginWithIntercomClick = useCallback(() => {
-        signIn("intercom");
-    }, []);
-    return (
-        <main className="h-screen flex items-center justify-center bg-violet-800 text-white">
-            <section className="flex flex-col justify-center items-center max-w-sm">
-                <div className="mb-12">
-                    {session ? (
-                        <LoggedUserMessage session={session} />
-                    ) : (
-                        <GuestMessage />
-                    )}
-                </div>
-                <button
-                    role="button"
-                    className="bg-teal-500 text-white px-2 py-2 rounded-lg flex items-center gap-2 hover:brightness-90 transition"
-                    onClick={handleOnLoginWithIntercomClick}
-                >
-                    <FaIntercom size={30} />
-                    Log in with Intercom
-                </button>
-
+            <div className="mt-12 text-center">
+                <Button onClick={handleStartPerformanceReviewsClick}>
+                    <CgPerformance size={30} />
+                    Start Performance Reviews
+                </Button>
                 <button
                     role="button"
                     className="mt-12"
@@ -71,8 +70,35 @@ export const Home = () => {
                 >
                     Log out
                 </button>
+            </div>
+        </>
+    );
+};
+
+const Home = () => {
+    const { data: session, status } = useSession();
+
+    const isLoading = status === "loading";
+
+    if (isLoading) {
+        return (
+            <div className="h-full flex items-center justify-center">
+                <TailSpin
+                    height={100}
+                    width={100}
+                    color="#14b8a6" // refactor to constant from tailwind
+                    ariaLabel="Loading"
+                />
+            </div>
+        );
+    }
+
+    return (
+        <div className="h-full flex items-center justify-center">
+            <section className="flex flex-col justify-center items-center max-w-sm">
+                {session ? <LoggedUserView session={session} /> : <GuestView />}
             </section>
-        </main>
+        </div>
     );
 };
 
